@@ -24,8 +24,8 @@ impl Display for Row {
         let uv = self
             .uv
             .iter()
-            .filter(|uv| **uv != 0)
             .enumerate()
+            .filter(|(_, uv)| **uv != 0)
             .with_position()
             .try_fold(String::with_capacity(200), |mut s, (pos, (i, uv))| {
                 write!(
@@ -109,7 +109,7 @@ impl Row {
 fn pvs_macro_to_index(ty: &str) -> Result<u8, &'static str> {
     match ty {
         "PVS_SLOW" => Ok(0),
-        "PVS_NOMINAL" => Ok(2),
+        "PVS_NOMINAL" => Ok(1),
         "PVS_FAST" => Ok(3),
         "PVS_FASTER" => Ok(4),
         _ => Err("Bad PVS type"),
