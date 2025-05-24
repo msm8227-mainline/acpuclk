@@ -1,3 +1,4 @@
+use itertools::{Itertools, Position};
 use regex::Regex;
 use std::fmt::Write;
 use std::{env::args, error::Error, fmt::Display, fs, sync::LazyLock};
@@ -20,19 +21,25 @@ impl Display for Row {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let hz = self.freq * 1000;
 
-        let uv = self.uv.iter().enumerate().try_fold(String::with_capacity(200), |mut s, (i, uv)| {
-            write!(
-                s,
-                "\topp-microvolt-speed0-pvs{} = <{} {} {}>;{}",
-                i,
-                uv,
-                uv,
-                uv,
-                if i == self.uv.len() - 1 { "" } else { "\n" }
-            )?;
+        let uv = self
+            .uv
+            .iter()
+            .filter(|uv| **uv != 0)
+            .enumerate()
+            .with_position()
+            .try_fold(String::with_capacity(200), |mut s, (pos, (i, uv))| {
+                write!(
+                    s,
+                    "\topp-microvolt-speed0-pvs{} = <{} {} {}>;{}",
+                    i,
+                    uv,
+                    uv,
+                    uv,
+                    if pos == Position::Last { "" } else { "\n" }
+                )?;
 
-            Ok(s)
-        })?;
+                Ok(s)
+            })?;
 
         write!(
             f,
