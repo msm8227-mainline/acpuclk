@@ -118,7 +118,6 @@ fn pvs_macro_to_index(ty: &str) -> Result<u8, &'static str> {
 
 fn main() -> Result<(), Box<dyn Error>> {
     let pvs_regex = Regex::new(r"\[\s*(.*?)\s*\]\[\s*(.*?)\s*\]\s*=\s*\{\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*")?;
-    let array_regex = Regex::new(r"static struct acpu_level .* __initdata = \{([\s\S]*?)\};")?;
     let inner_regex = Regex::new(r"\s*\d+,\s*\{\s*[^}]+\s*\},\s*\w+\(\d+\),\s*\d+")?;
 
     let path = args().nth(1).ok_or("Please specify the C file path")?;
@@ -138,8 +137,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     });
 
     // acpu_freq_tbl array
-    for (table_match, (pvs_name, table_name)) in array_regex.find_iter(&content).map(|m| array_regex.captures(m.as_str())).zip(pvs_table) {
-        let table = table_match.ok_or("No acpuclk array found, please fix your kernel")?;
+    for (pvs_name, table_name) in pvs_table {
+        let array_regex = Regex::new(&format!(r"static struct acpu_level {table_name}\[\] __initdata = \{{([\s\S]*?)\}};"))?;
+        let table = array_regex.captures(&content).ok_or("No acpuclk array found, please fix your kernel")?;
         let ty = pvs_name.parse::<u8>().or_else(|_| pvs_macro_to_index(pvs_name))?;
         let inner = table
             .get(1)
@@ -169,13 +169,9 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
     }
 
-    if dt.len() > 20 {
-        Err("Bad item count, if you're sure it's correct output please bump the limit value".into())
-    } else {
-        for row in dt {
-            println!("{row}");
-        }
-
-        Ok(())
+    for row in dt {
+        println!("{row}");
     }
+
+    Ok(())
 }
